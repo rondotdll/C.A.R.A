@@ -3,6 +3,7 @@ import os
 from gpt import GPT3
 
 import os
+import spacy
 
 import discord
 import openai
@@ -31,9 +32,5 @@ developer_ids = [
 ]
 
 gpt = GPT3("base_prompt.md")
-
-commands = {
-        "kick": {"keywords": ["kick", "boot", "remove"]},
-        "ban": {"keywords": ["ban", "block", "banish", "vaporize"]},
-        "mute": {"keywords": ["mute", "silence", "quiet", "shutup"]}
-    }
+nlp = spacy.load("en_core_web_lg")
+bot = discord.Client(intents=intents)
