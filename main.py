@@ -2,10 +2,10 @@ import time
 import spacy
 import discord
 
-from commands.lib import handle_command
-
 from const import *
 from flexmatch.match import *
+from cnlp import is_directed_at_cara
+from commands.lib import handle_command
 
 from discord import Embed, Message, Permissions
 
@@ -38,6 +38,8 @@ if __name__ == "__main__":
     @bot.event
     async def on_message(msg: discord.Message):
 
+        # print(str(msg.author.id) + " >> " + msg.content)
+
         # determine if CARA is the message author
         if msg.author == bot.user:
             # if this message was already added to our context stack
@@ -45,7 +47,9 @@ if __name__ == "__main__":
                 gpt.add_ctx(msg.content, "assistant")
             return
 
-
+        if not is_directed_at_cara(msg):
+            gpt.add_ctx(f"[{msg.author.display_name or msg.author.name}]: {msg.content}")
+            return
 
         # restrict non-developers from using Cara (for testing)
         if msg.author.id not in developer_ids:
@@ -53,7 +57,6 @@ if __name__ == "__main__":
 
         # display the "C.A.R.A is typing..." text
         async with msg.channel.typing():
-
             await handle_command(msg)
 
 

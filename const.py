@@ -33,4 +33,5 @@ developer_ids = [
 
 gpt = GPT3("base_prompt.md")
 nlp = spacy.load("en_core_web_lg")
+trf = None # spacy.load("en_core_web_trf")
 bot = discord.Client(intents=intents)

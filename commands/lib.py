@@ -13,8 +13,6 @@ async def handle_command(msg: Message):
     doc = nlp(msg.content)
     intent = None
     subject = None
-    print([t.ent_type_ for t in doc])
-    print([t.pos_ for t in doc])
 
     # parse our NLP output, determining an action & subject.
     for token in doc:
@@ -30,8 +28,9 @@ async def handle_command(msg: Message):
 
     print(intent, subject)
 
-    if intent == "kick":
-        await kick_command(msg, subject)
+    if intent == ".":
+        ...
+        # await kick_command(msg, subject)
     elif intent == "ban":
         await ban_command(msg, subject)
     elif intent == "mute":
