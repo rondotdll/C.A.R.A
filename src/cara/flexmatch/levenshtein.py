@@ -1,5 +1,6 @@
 from Levenshtein import distance
 
+
 def min_distance(input: str, values: list[str]):
     last_min_distance = distance(input, values[0])
     min_values = [values[0]]

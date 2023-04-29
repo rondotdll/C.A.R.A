@@ -5,13 +5,17 @@ import openai
 
 # this class will handle any GPT interaction
 
+
 class GPT3:
-###########################################################################################
+    ###########################################################################################
 
     def __init__(self, base_prompt_file: str):
         self.base_prompt_text = " ".join(
-            [line for line in open(base_prompt_file, "r").readlines()
-                                if (line.strip() != '' and not line.startswith('#'))] # lines starting with hashtags are treated as comments, and are removed.
+            [
+                line
+                for line in open(base_prompt_file, "r").readlines()
+                if (line.strip() != "" and not line.startswith("#"))
+            ]  # lines starting with hashtags are treated as comments, and are removed.
         ).strip()
 
         # This defines the models overall behavior
@@ -23,12 +27,12 @@ class GPT3:
         # openai config stuff
         openai.api_key = os.environ["GPT-KEY"]
         self.model = "gpt-3.5-turbo"
-        self.wild_card = 0.5 # "randomness" of the responses
+        self.wild_card = 0.5  # "randomness" of the responses
 
         # this is a continuous thread of messages that is passed to GPT each time reply_ctx()
         self.context = [self.base_prompt]
 
-###########################################################################################
+    ###########################################################################################
 
     def describe_e(self, error: Exception) -> str:
         openai.ChatCompletion.create(
@@ -37,12 +41,13 @@ class GPT3:
                 self.base_prompt,
                 {
                     "role": "user",
-                    "content": "The following Python exception occured in your code: " + str(error)
-                }
-            }
+                    "content": "The following Python exception occured in your code: "
+                    + str(error),
+                },
+            },
         )
 
-###########################################################################################
+    ###########################################################################################
 
     # replies to a message without context (only includes base prompt and string)
     # this is SIGNIFICANTLY CHEAPER, and should be used over reply_ctx()
@@ -51,19 +56,15 @@ class GPT3:
         try:
             response = openai.ChatCompletion.create(
                 model=self.model,
-                messages=[
-                    self.base_prompt,
-                    {
-                        "role": "user",
-                        "content": msg
-                    }
-                ]
+                messages=[self.base_prompt, {"role": "user", "content": msg}],
             )
 
             # Due to the nature of GPT, some responses may feel too "robotic".
             # by setting humanize to true, we'll have GPT try to humanize the response.
             if humanize:
-                return self.reply(f"Humanize the following text:\n{response.choices[0].message.content}")
+                return self.reply(
+                    f"Humanize the following text:\n{response.choices[0].message.content}"
+                )
 
             # openai returns a JSON object with a bunch of other stuff in it
             # so we need to grab the useful part (our response)
@@ -73,7 +74,7 @@ class GPT3:
         except Exception as E:
             return self.describe_e(E)
 
-###########################################################################################
+    ###########################################################################################
 
     # replies to a message without context, using an extremely minimal system prompt
     # this is even cheaper than a standard reply()
@@ -84,23 +85,23 @@ class GPT3:
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are a discord moderation AI named \"C.A.R.A\", which stands for \"Cognitive Automated Response Assistant\", and you were created in Python by Studio 7 Development.",
-                    }, {
-                        "role": "user",
-                        "content": msg
-                    }
-                ]
+                        "content": 'You are a discord moderation AI named "C.A.R.A", which stands for "Cognitive Automated Response Assistant", and you were created in Python by Studio 7 Development.',
+                    },
+                    {"role": "user", "content": msg},
+                ],
             )
 
             if humanize:
-                return self.reply_min(f"Humanize the following text:\n{response.choices[0].message.content}")
+                return self.reply_min(
+                    f"Humanize the following text:\n{response.choices[0].message.content}"
+                )
 
             return response.choices[0].message.content
 
         except Exception as E:
             return self.describe_e(E)
 
-###########################################################################################
+    ###########################################################################################
 
     # replies to a message using the global context
     # this becomes really expen$$$ive really fast and should be used sparingly
@@ -117,10 +118,7 @@ class GPT3:
                 context[0] = self.base_prompt
 
             # send the context to OpenAI
-            response = openai.ChatCompletion.create(
-                model=self.model,
-                messages=context
-            )
+            response = openai.ChatCompletion.create(model=self.model, messages=context)
 
             # add the reply to our rolling context
             self.add_ctx(
@@ -129,22 +127,22 @@ class GPT3:
             )
 
             if humanize:
-                return self.reply_min(f"Humanize the following text:\n{response.choices[0].message.content}")
+                return self.reply_min(
+                    f"Humanize the following text:\n{response.choices[0].message.content}"
+                )
 
             return response.choices[0].message.content
 
         except Exception as E:
             return self.describe_e(E)
 
-###########################################################################################
+    ###########################################################################################
 
     # clears the current conversation context
     def clear_ctx(self):
-        self.context = [
-            self.base_prompt
-        ]
+        self.context = [self.base_prompt]
 
-###########################################################################################
+    ###########################################################################################
 
     # adds a message to context
     def add_ctx(self, msg: str, role: str = "user"):
@@ -152,9 +150,4 @@ class GPT3:
         if len(self.context) >= 50:
             self.context = self.context[-49:]
 
-        self.context.append(
-            {
-                "role": role,
-                "content": msg
-            }
-        )
+        self.context.append({"role": role, "content": msg})

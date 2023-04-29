@@ -1,18 +1,13 @@
-import time
-import spacy
-import discord
+from cara.const import *
+from cara.cnlp import is_directed_at_cara
+from src.cara.commands import handle_command
 
-from const import *
-from flexmatch.match import *
-from cnlp import is_directed_at_cara
-from commands.lib import handle_command
-
-from discord import Embed, Message, Permissions
 
 ###########################################################################################
 
 # this is a security feature to verify that our base prompt was parsed correctly
 # an invalid base prompt can result in strange & unpredictable behavior from GPT
+
 
 def initial_confirmation(base_prompt):
     print(base_prompt + "\n")
@@ -20,6 +15,7 @@ def initial_confirmation(base_prompt):
     if res.upper() not in ["Y", ""]:
         print("Failed to validate base prompt.\nStopping...")
         exit(1)
+
 
 ###########################################################################################
 
@@ -31,13 +27,13 @@ if __name__ == "__main__":
     @bot.event
     async def on_ready():
         # give cara something to do
-        bot.activity = activity
-        print(f"Successfully logged in as {bot.user.name}#{bot.user.discriminator} [{bot.user.id}]")
+        print(
+            f"Successfully logged in as {bot.user.name}#{bot.user.discriminator} [{bot.user.id}]"
+        )
 
     # triggered everytime a message is sent
     @bot.event
     async def on_message(msg: discord.Message):
-
         # print(str(msg.author.id) + " >> " + msg.content)
 
         # determine if CARA is the message author
@@ -48,7 +44,9 @@ if __name__ == "__main__":
             return
 
         if not is_directed_at_cara(msg):
-            gpt.add_ctx(f"[{msg.author.display_name or msg.author.name}]: {msg.content}")
+            gpt.add_ctx(
+                f"[{msg.author.display_name or msg.author.name}]: {msg.content}"
+            )
             return
 
         # restrict non-developers from using Cara (for testing)
@@ -58,6 +56,5 @@ if __name__ == "__main__":
         # display the "C.A.R.A is typing..." text
         async with msg.channel.typing():
             await handle_command(msg)
-
 
     bot.run(token)
