@@ -1,7 +1,14 @@
+import os
+
+import discord
+from discord.ext.commands import AutoShardedBot
+
+from cara.commands.lib import handle_command
 from cara.const import *
 from cara.cnlp import is_directed_at_cara
-from src.cara.commands import handle_command
+from cara.gpt.context import ContextCollection
 
+token = os.environ["TOKEN"]
 
 ###########################################################################################
 
@@ -19,42 +26,51 @@ def initial_confirmation(base_prompt):
 
 ###########################################################################################
 
-# verify this file is being run as a program and not a module
-if __name__ == "__main__":
-    initial_confirmation(gpt.base_prompt_text)
 
-    # triggered when a stable connection to discord has been made
-    @bot.event
-    async def on_ready():
+class CARABot(AutoShardedBot):
+    def __init__(self):
+        super().__init__(
+            intents=intents, status=status, activity=activity, command_prefix=""
+        )
+
+        self.contexts = None
+        self.gpt = GPT3("./base_prompt.md")
+
+    async def on_ready(self):
         # give cara something to do
         print(
             f"Successfully logged in as {bot.user.name}#{bot.user.discriminator} [{bot.user.id}]"
         )
 
-    # triggered everytime a message is sent
-    @bot.event
-    async def on_message(msg: discord.Message):
-        # print(str(msg.author.id) + " >> " + msg.content)
+        self.contexts = ContextCollection(assistant_user=self.user)
 
-        # determine if CARA is the message author
-        if msg.author == bot.user:
-            # if this message was already added to our context stack
-            if gpt.context[-1]["content"] != msg.content:
-                gpt.add_ctx(msg.content, "assistant")
-            return
-
-        if not is_directed_at_cara(msg):
-            gpt.add_ctx(
-                f"[{msg.author.display_name or msg.author.name}]: {msg.content}"
-            )
-            return
-
+    async def on_message(self, msg: discord.Message):
         # restrict non-developers from using Cara (for testing)
         if msg.author.id not in developer_ids:
             return
 
+        # determine if CARA is the message author
+        if msg.author == bot.user:
+            return
+
+        # get the appropriate context for this message
+        context = self.contexts[msg.author, msg.channel]
+
+        # add the message to the context...
+        context += msg
+        print(f"{context.for_user.display_name}: {len(context)} messages")
+
+        if not is_directed_at_cara(context, msg):
+            return
+
         # display the "C.A.R.A is typing..." text
         async with msg.channel.typing():
-            await handle_command(msg)
+            # prompt = await handle_command(msg)
+            response = self.gpt.continue_conversation(context)
+            await msg.reply(response)
 
+
+# verify this file is being run as a program and not a module
+if __name__ == "__main__":
+    bot = CARABot()
     bot.run(token)

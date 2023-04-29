@@ -1,9 +1,14 @@
+"""
+This file contains the GPT3 class, which is used to interface with OpenAI's GPT API.
+It also contains some helpful functions to reduce the costs of using the API.
+"""
+
 import os
 import pathlib
 
 import openai
 
-# this class will handle any GPT interaction
+from cara.gpt.context import Context
 
 
 class GPT3:
@@ -29,22 +34,19 @@ class GPT3:
         self.model = "gpt-3.5-turbo"
         self.wild_card = 0.5  # "randomness" of the responses
 
-        # this is a continuous thread of messages that is passed to GPT each time reply_ctx()
-        self.context = [self.base_prompt]
-
     ###########################################################################################
 
     def describe_e(self, error: Exception) -> str:
         openai.ChatCompletion.create(
             model=self.model,
-            messages={
+            messages=[
                 self.base_prompt,
                 {
                     "role": "user",
                     "content": "The following Python exception occured in your code: "
                     + str(error),
                 },
-            },
+            ],
         )
 
     ###########################################################################################
@@ -85,7 +87,9 @@ class GPT3:
                 messages=[
                     {
                         "role": "system",
-                        "content": 'You are a discord moderation AI named "C.A.R.A", which stands for "Cognitive Automated Response Assistant", and you were created in Python by Studio 7 Development.',
+                        "content": 'You are a discord moderation AI named "C.A.R.A", '
+                        'which stands for "Cognitive Automated Response Assistant",'
+                        " and you were created in Python by Studio 7 Development.",
                     },
                     {"role": "user", "content": msg},
                 ],
@@ -105,33 +109,60 @@ class GPT3:
 
     # replies to a message using the global context
     # this becomes really expen$$$ive really fast and should be used sparingly
-    def reply_ctx(self, msg: str, ctx_size: int = -1, humanize: bool = False) -> str:
+    # def reply_ctx(self, msg: str, ctx_size: int = -1, humanize: bool = False) -> str:
+    #     try:
+    #         # add our message to the context stack
+    #         self.add_ctx(msg)
+    #
+    #         context = self.context
+    #
+    #         # context size will only select the "ctx_size" most recent messages (with the base prompt)
+    #         if 0 < ctx_size <= len(context):
+    #             context = self.context[-(ctx_size):]
+    #             context[0] = self.base_prompt
+    #
+    #         # send the context to OpenAI
+    #         response = openai.ChatCompletion.create(model=self.model, messages=context)
+    #
+    #         # add the reply to our rolling context
+    #         self.add_ctx(
+    #             role="assistant",
+    #             msg=response.choices[0].message.content,
+    #         )
+    #
+    #         if humanize:
+    #             return self.reply_min(
+    #                 f"Humanize the following text:\n{response.choices[0].message.content}"
+    #             )
+    #
+    #         return response.choices[0].message.content
+    #
+    #     except Exception as E:
+    #         return self.describe_e(E)
+
+    def continue_conversation(
+        self, context: Context, prompt: str = None, humanize: bool = False
+    ) -> str:
         try:
-            # add our message to the context stack
-            self.add_ctx(msg)
+            messages = [self.base_prompt]
 
-            context = self.context
+            if prompt:
+                messages.append({"role": "system", "content": prompt})
 
-            # context size will only select the "ctx_size" most recent messages (with the base prompt)
-            if 0 < ctx_size <= len(context):
-                context = self.context[-(ctx_size):]
-                context[0] = self.base_prompt
+            messages += context.openai_messages()
 
-            # send the context to OpenAI
-            response = openai.ChatCompletion.create(model=self.model, messages=context)
+            response = openai.ChatCompletion.create(model=self.model, messages=messages)
 
-            # add the reply to our rolling context
-            self.add_ctx(
-                role="assistant",
-                msg=response.choices[0].message.content,
-            )
+            gpt_response = response.choices[0].message.content
 
             if humanize:
-                return self.reply_min(
-                    f"Humanize the following text:\n{response.choices[0].message.content}"
+                gpt_response = self.reply_min(
+                    f"Humanize the following text:\n{gpt_response}"
                 )
 
-            return response.choices[0].message.content
+            context.add_assistant_msg(gpt_response)
+
+            return gpt_response
 
         except Exception as E:
             return self.describe_e(E)
@@ -139,15 +170,15 @@ class GPT3:
     ###########################################################################################
 
     # clears the current conversation context
-    def clear_ctx(self):
-        self.context = [self.base_prompt]
+    # def clear_ctx(self):
+    #     self.context = [self.base_prompt]
 
     ###########################################################################################
 
     # adds a message to context
-    def add_ctx(self, msg: str, role: str = "user"):
-        # cap our context at 50 messages
-        if len(self.context) >= 50:
-            self.context = self.context[-49:]
-
-        self.context.append({"role": role, "content": msg})
+    # def add_ctx(self, msg: str, role: str = "user"):
+    #     # cap our context at 50 messages
+    #     if len(self.context) >= 50:
+    #         self.context = self.context[-49:]
+    #
+    #     self.context.append({"role": role, "content": msg})

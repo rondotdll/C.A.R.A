@@ -1,7 +1,9 @@
 import re
 
 from discord import Message
-from const import bot, gpt, nlp, trf
+from cara.const import bot, nlp
+from cara.gpt.context import Context
+
 
 ###########################################################################################
 
@@ -96,65 +98,80 @@ def has_question(string: str) -> bool:
 
 
 # determine if a message is directed at CARA
-def is_directed_at_cara(msg: Message) -> bool:
+def is_directed_at_cara(context: Context, msg: Message) -> bool:
+
+    if context[-2].is_assistant:
+        proc = nlp(msg.content)
+
+        assistant_msg = context[-2]
+
+        # if the message is decently similar to the last assistant message...
+        print("A: ", msg.content, "B: ", assistant_msg.content)
+        similarity = proc.similarity(nlp(assistant_msg.content))
+
+        print("Similarity: ", similarity)
+        if similarity > 0.5:
+            return True
+
     # if cara is mentioned explicitly
-    if bot.user in msg.mentions:
+    if msg.content.lower().startswith('cara'):
         return True
 
-    sentences = msg.content.replace("! ", ".")
-    sentences = sentences.split(".")
-    for sentence in sentences:
-        words = nlp(sentence.lower().replace("c.a.r.a", "cara"))
-
-        for word in words:
-            # favor cara as a direct object first
-            if word.dep_ == "nsubj":
-                # direct reference to cara
-                if word.orth_ == "cara":
-                    return True
-
-                # indirect reference to cara
-                elif word.orth_ == "you":
-                    try:
-                        if gpt.context[-1]["role"] == "assistant":
-                            return True
-
-                    except IndexError:
-                        ...
-                else:
-                    break
-
-            # favor cara as a direct object second to as a subject
-            elif word.dep_ == "dobj":
-                # indirect reference to cara
-                if word.orth_ == "you":
-                    try:
-                        if gpt.context[-1]["role"] == "assistant" or "cara" in sentence:
-                            return True
-
-                    except IndexError:
-                        ...
-
-        # if the user explicitly mention cara
-        if (
-            bot.user in msg.mentions
-            or msg.content.lower().replace(".", "").startswith("cara")
-            and len(msg.content) > 4
-        ):
-            return True
-        else:
-            try:
-                # if the last message was from Cara
-                if gpt.context[-1]["role"] == "assistant":
-                    # and the message before the last was by the current message author
-                    if gpt.context[-2]["content"].split("]: ")[0].replace("[", "") == (
-                        msg.author.display_name or msg.author.name
-                    ):
-                        # and either the previous or current message is a question:
-                        if has_question(msg.content):
-                            return True
-
-            except IndexError:
-                ...
+    # if bot.user in msg.mentions:
+    #     return True
+    #
+    # sentences = msg.content.replace("! ", ".")
+    # sentences = sentences.split(".")
+    # for sentence in sentences:
+    #     words = nlp(sentence.lower().replace("c.a.r.a", "cara"))
+    #
+    #     for word in words:
+    #         # favor cara as a direct object first
+    #         if word.dep_ == "nsubj":
+    #             # direct reference to cara
+    #             if word.orth_ == "cara":
+    #                 return True
+    #
+    #             # indirect reference to cara
+    #             elif word.orth_ == "you":
+    #                 try:
+    #                     if context.latest().is_assistant:
+    #                         return True
+    #
+    #                 except IndexError:
+    #                     ...
+    #             else:
+    #                 break
+    #
+    #         # favor cara as a direct object second to as a subject
+    #         elif word.dep_ == "dobj":
+    #             # indirect reference to cara
+    #             if word.orth_ == "you":
+    #                 try:
+    #                     if context.latest().is_assistant or "cara" in sentence:
+    #                         return True
+    #
+    #                 except IndexError:
+    #                     ...
+    #
+    #     # if the user explicitly mention cara
+    #     if (
+    #         bot.user in msg.mentions
+    #         or msg.content.lower().replace(".", "").startswith("cara")
+    #         and len(msg.content) > 4
+    #     ):
+    #         return True
+    #     else:
+    #         try:
+    #             # if the last message was from Cara
+    #             if context.latest().is_assistant:
+    #                 # and the message before the last was by the current message author
+    #                 if context[-2].message.author == msg.author:
+    #                     # and either the previous or current message is a question:
+    #                     if has_question(msg.content):
+    #                         return True
+    #
+    #         except IndexError:
+    #             ...
 
     return False
