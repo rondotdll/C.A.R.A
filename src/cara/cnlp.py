@@ -117,6 +117,8 @@ def is_directed_at_cara(context: Context, msg: Message) -> bool:
     if msg.content.lower().startswith('cara'):
         return True
 
+    # bunch of extra un-polished logic
+
     # if bot.user in msg.mentions:
     #     return True
     #

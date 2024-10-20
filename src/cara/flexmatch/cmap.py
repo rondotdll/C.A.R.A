@@ -1,3 +1,5 @@
+# yes, this is a mess.
+# ideally, this map would be an external file that gets loaded at runtime
 GARBAGE_CHAR_MAP = {
     "ℹ": "i",
     "☓": "x",

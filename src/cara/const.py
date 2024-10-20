@@ -25,12 +25,7 @@ temperature = 0.5  # "randomness" of the responses
 CARA_ID = 1092993211015901246
 
 developer_ids = [
-    715019722336370788,  # root
-    846498827238506499,  # david j
-    525089462892625929,  # Diamonds.
-    881384781223452693,  # tres
-    1047747167617568829,  # stxo
-    398549524236337152,  # mcal
+    123456789123456789,  # sample id
 ]
 
 # gpt = GPT3("./base_prompt.md")
