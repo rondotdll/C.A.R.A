@@ -3,7 +3,7 @@ GPT powered dynamic discord bot
 
 ## To the person reviewing this project
 This whole thing was hacked together fairly quickly during what I like to call 
-the "GPT surge", shortly after [not-so] OpenAI released GPT3.5 and the API to 
+the "GPT surge", [not-so] shortly after OpenAI released GPT3.5 and the API to 
 go along with it (Late ~2022ish).
 
 **There are a number of different things that can (should absolutely) be improved**, 
